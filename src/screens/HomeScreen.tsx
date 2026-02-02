@@ -1,90 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
-import auth from '@react-native-firebase/auth';
+import React from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { HomeStackParamList } from '../types/navigation'
+// Typy nawigacji
 
-import { useTasks } from '../hooks/useTasks';
-import TodoInput from '../components/TodoInput';
-import TodoItem from '../components/TodoItem';
-import { colors } from '../theme/colors';
+type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
-export default function HomeScreen() {
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // 👤 Obserwujemy zalogowanego użytkownika
-  useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged(user => {
-      setUserId(user ? user.uid : null);
-    });
-    return unsubscribe;
-  }, []);
-
-  // 🔹 Hook zarządzający wszystkimi zadaniami
-  const {
-    tasks,
-    addTask,
-    toggleTask,
-    deleteTask,
-    editingTaskId,
-    editingTaskText,
-    startEditing,
-    saveEditedTask,
-    cancelEditing,
-    setEditingTaskText,
-  } = useTasks(userId);
-
+const HomeScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        Co zamierzasz dzisiaj zrealizować?
-      </Text>
-
-      {/* Input zadania */}
-      <TodoInput onSubmit={addTask} />
-
-      {/* Lista zadań */}
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Brak zadań</Text>
-        }
-        renderItem={({ item }) => (
-          <TodoItem
-            task={item}
-            editingTaskId={editingTaskId}
-            editingTaskText={editingTaskText}
-            onToggle={toggleTask}
-            onDelete={deleteTask}
-            onEdit={startEditing}
-            onChangeText={setEditingTaskText}
-            onSaveEdit={saveEditedTask}
-            onCancelEdit={cancelEditing}
-          />
-        )}
+      <Text style={styles.title}>Welcome to Home Screen!</Text>
+      <Button
+        title="Go to Details"
+        onPress={() => navigation.navigate('Details')}
       />
     </View>
   );
-}
+};
+
+export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16, // px-4
-    paddingTop: 80,        // pt-20
-    backgroundColor: colors.item.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
   },
-
   title: {
-    fontSize: 20,           // text-xl
-    fontWeight: '700',      // font-bold
-    marginBottom: 16,       // mb-4
-    textAlign: 'center',
-    color: colors.text.primary,
-  },
-
-  emptyText: {
-    textAlign: 'center',
-    color: colors.text.primary,
-    marginTop: 20,
+    fontSize: 24,
+    marginBottom: 20,
   },
 });
