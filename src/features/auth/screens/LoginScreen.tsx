@@ -1,7 +1,11 @@
 import React from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../../navigation/AuthStackNavigator';
 
-export default function LoginScreen() {
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login' >;
+
+export default function LoginScreen({navigation}: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Logowanie</Text>
@@ -30,14 +34,14 @@ export default function LoginScreen() {
         </View>
 
         <Pressable
-          onPress={() => console.log('Login')}
+          onPress={() => navigation.navigate('Login')}
           style={styles.primaryButton}
         >
           <Text style={styles.primaryButtonText}>Zaloguj</Text>
         </Pressable>
 
         <Pressable
-          onPress={() => console.log('Go to Register')}
+          onPress={() => navigation.navigate('Register')}
           style={styles.linkButton}
         >
           <Text style={styles.linkText}>

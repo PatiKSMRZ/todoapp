@@ -1,7 +1,12 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../../navigation/AuthStackNavigator';
 
-export default function AuthStartScreen() {
+type Props = NativeStackScreenProps<AuthStackParamList, 'AuthStart'>;
+
+
+export default function AuthStartScreen({navigation}: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.hero}>
@@ -13,14 +18,14 @@ export default function AuthStartScreen() {
 
       <View style={styles.actions}>
         <Pressable
-          onPress={() => console.log('Go to Login')}
+          onPress={() => navigation.navigate('Login')}
           style={styles.primaryButton}
         >
           <Text style={styles.primaryButtonText}>Zaloguj się</Text>
         </Pressable>
 
         <Pressable
-          onPress={() => console.log('Go to Register')}
+          onPress={() => navigation.navigate('Register')}
           style={styles.secondaryButton}
         >
           <Text style={styles.secondaryButtonText}>Zarejestruj się</Text>

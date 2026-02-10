@@ -1,11 +1,16 @@
 import React from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
   FlatList,
   Pressable,
   StyleSheet,
+  Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { TasksStackParamList } from '../../../navigation/TasksStackNavigator';
 
 type UiTask = {
   id: string;
@@ -20,10 +25,28 @@ const MOCK_TASKS: UiTask[] = [
 ];
 
 export default function TasksListScreen() {
+
+ const navigation =
+    useNavigation<NativeStackNavigationProp<TasksStackParamList>>();
+
+  const [tasks, setTasks] = useState<UiTask[]>(MOCK_TASKS);
+  
+
+  const deleteTask = (taskId: string) => {
+    Alert.alert('Usunąć zadanie?', 'Tej operacji nie da się cofnąć.', [
+      { text: 'Anuluj', style: 'cancel' },
+      {
+        text: 'Usuń',
+        style: 'destructive',
+        onPress: () =>  setTasks((prev: UiTask[]) => prev.filter((t) => t.id !== taskId)),
+      },
+    ]);
+  };
+
   const renderItem = ({ item }: { item: UiTask }) => {
     return (
       <Pressable
-        onPress={() => console.log('Edit task:', item.id)}
+        onPress={() => navigation.navigate('TaskForm' ,{ taskId: item.id})}
         style={styles.taskItem}
       >
         <View style={styles.taskLeft}>
@@ -42,7 +65,10 @@ export default function TasksListScreen() {
         </View>
 
         <Pressable
-          onPress={() => console.log('Delete task:', item.id)}
+        onPress={(e) => {
+          e.stopPropagation();
+          deleteTask(item.id);
+        }}
           hitSlop={10}
           style={styles.deleteButton}
         >
@@ -59,7 +85,7 @@ export default function TasksListScreen() {
         <Text style={styles.headerTitle}>Zadania</Text>
 
         <Pressable
-          onPress={() => console.log('Add task')}
+          onPress={() => navigation.navigate('TaskForm')}
           style={styles.addButton}
         >
           <Text style={styles.addButtonText}>+</Text>
@@ -69,14 +95,14 @@ export default function TasksListScreen() {
       {/* Toolbar */}
       <View style={styles.toolbar}>
         <Pressable
-          onPress={() => console.log('Filter')}
+          onPress={() => {}}
           style={styles.toolbarButton}
         >
           <Text>Filtr: Wszystkie</Text>
         </Pressable>
 
         <Pressable
-          onPress={() => console.log('Sort')}
+          onPress={() => {}}
           style={styles.toolbarButton}
         >
           <Text>Sort: Najnowsze</Text>
@@ -85,7 +111,7 @@ export default function TasksListScreen() {
 
       {/* List */}
       <FlatList
-        data={MOCK_TASKS}
+        data={tasks}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
