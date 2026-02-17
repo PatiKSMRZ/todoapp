@@ -1,86 +1,28 @@
-import React, {useState} from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet,Alert, ActivityIndicator } from 'react-native';
-
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-
-
+// src/screens/auth/RegisterScreen/RegisterScreen.tsx
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, Alert, ActivityIndicator,StyleSheet } from 'react-native';
+import { useRegister } from '../hooks/useRegister';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
-  const [loading, setLoading] = useState(false);
 
-   const handleRegister = async () => {
-    const cleanEmail = email.trim();
+  const { register, loading } = useRegister();
 
-    if (!cleanEmail || !password || !password2) {
-      Alert.alert('Uzupełnij dane', 'Podaj email i hasło (2x).');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Za krótkie hasło', 'Hasło musi mieć minimum 6 znaków.');
-      return;
-    }
-
-    if (password !== password2) {
-      Alert.alert('Hasła nie pasują', 'Wpisz identyczne hasło w obu polach.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // 1) tworzy konto w Auth
-      const cred = await auth().createUserWithEmailAndPassword(
-  cleanEmail,
-  password
-);
-
-      // 2) zapisuje usera w Firestore
-     await firestore()
-      .collection('users')
-      .doc(cred.user.uid)
-      .set({
-        email: cred.user.email,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-      });
-
-      // user jest zalogowany automatycznie (onAuthStateChanged przełączy UI)
+  const handleRegister = async () => {
+    const result = await register(email, password, password2);
+    if (result.ok) {
       Alert.alert('Sukces', 'Konto zostało utworzone!');
-    } catch (e: any) {
-     if (e?.code === 'auth/email-already-in-use') {
-        Alert.alert(
-          'Ten email już istnieje',
-          'Zaloguj się lub użyj innego adresu.',
-        );
-      } else if (e?.code === 'auth/invalid-email') {
-        Alert.alert(
-          'Niepoprawny email',
-          'Sprawdź czy email jest wpisany poprawnie.',
-        );
-      } else if (e?.code === 'auth/weak-password') {
-        Alert.alert('Słabe hasło', 'Użyj mocniejszego hasła (min. 6 znaków).');
-      } else if (e?.code === 'auth/network-request-failed') {
-        Alert.alert('Brak internetu', 'Sprawdź połączenie i spróbuj ponownie.');
-      } else {
-        Alert.alert(
-          'Rejestracja nieudana',
-          e?.message ?? 'Coś poszło nie tak. Spróbuj ponownie.',
-        );
-      }
-    } finally {
-      setLoading(false);
+      return;
     }
+    Alert.alert(result.error.title, result.error.message);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Rejestracja</Text>
-      <Text style={styles.subtitle}>
-        Załóż konto, żeby zapisywać zadania.
-      </Text>
+      <Text style={styles.subtitle}>Załóż konto, żeby zapisywać zadania.</Text>
 
       <View style={styles.form}>
         <View style={styles.field}>
@@ -91,6 +33,7 @@ export default function RegisterScreen() {
             placeholder="np. patrycja@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
             style={styles.input}
           />
         </View>
@@ -119,24 +62,15 @@ export default function RegisterScreen() {
 
         <Pressable
           onPress={handleRegister}
-          style={[styles.primaryButton, loading &&styles.primaryButtonDisabled]}
+          style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
           disabled={loading}
         >
-
-            {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.primaryButtonText}>Utwórz konto</Text>
-          )}
+          {loading ? <ActivityIndicator color="white" /> : <Text style={styles.primaryButtonText}>Utwórz konto</Text>}
         </Pressable>
 
-        <Pressable
-          onPress={() => console.log('Go to Login')}
-          style={styles.linkButton}
-        >
+        <Pressable onPress={() => console.log('Go to Login')} style={styles.linkButton} disabled={loading}>
           <Text style={styles.linkText}>
-            Masz konto?{' '}
-            <Text style={styles.linkTextStrong}>Zaloguj się</Text>
+            Masz konto? <Text style={styles.linkTextStrong}>Zaloguj się</Text>
           </Text>
         </Pressable>
       </View>
