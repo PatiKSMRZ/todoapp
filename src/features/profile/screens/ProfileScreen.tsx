@@ -1,7 +1,28 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
+import { useAuth } from '../../auth/context/AuthProvider';
+import { logout } from '../../auth/services/firebase/auth.service';
 
 export default function ProfileScreen() {
+  const { user } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Wylogowanie',
+      'Czy na pewno chcesz się wylogować?',
+      [
+        { text: 'Anuluj', style: 'cancel' },
+        {
+          text: 'Wyloguj',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -13,7 +34,9 @@ export default function ProfileScreen() {
       {/* User info */}
       <View style={styles.card}>
         <Text style={styles.cardLabel}>Email</Text>
-        <Text style={styles.cardValue}>uzytkownik@email.com</Text>
+        <Text style={styles.cardValue}>
+          {user?.email ?? 'Brak danych'}
+        </Text>
       </View>
 
       {/* Stats */}
@@ -39,7 +62,7 @@ export default function ProfileScreen() {
         </Pressable>
 
         <Pressable
-          onPress={() => console.log('Logout')}
+          onPress={handleLogout}
           style={styles.dangerButton}
         >
           <Text style={styles.dangerButtonText}>Wyloguj się</Text>
@@ -53,7 +76,6 @@ export default function ProfileScreen() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

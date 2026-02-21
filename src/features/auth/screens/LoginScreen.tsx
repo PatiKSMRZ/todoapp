@@ -1,11 +1,21 @@
-import React from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../../navigation/AuthStackNavigator';
+import { useLogin } from '../hooks/useLogin';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Login' >;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-export default function LoginScreen({navigation}: Props) {
+export default function LoginScreen({ navigation }: Props) {
+  const { login, loading, error } = useLogin();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    login(email, password);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Logowanie</Text>
@@ -21,6 +31,8 @@ export default function LoginScreen({navigation}: Props) {
             keyboardType="email-address"
             autoCapitalize="none"
             style={styles.input}
+            value={email}
+            onChangeText={setEmail}
           />
         </View>
 
@@ -30,14 +42,26 @@ export default function LoginScreen({navigation}: Props) {
             placeholder="Twoje hasło"
             secureTextEntry
             style={styles.input}
+            value={password}
+            onChangeText={setPassword}
           />
         </View>
 
+        {error && <Text style={styles.error}>{error}</Text>}
+
         <Pressable
-          onPress={() => navigation.navigate('Login')}
-          style={styles.primaryButton}
+          onPress={handleLogin}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            pressed && { opacity: 0.8 },
+          ]}
+          disabled={loading}
         >
-          <Text style={styles.primaryButtonText}>Zaloguj</Text>
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.primaryButtonText}>Zaloguj</Text>
+          )}
         </Pressable>
 
         <Pressable
@@ -112,5 +136,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     opacity: 1,
   },
+  error: {
+  color: 'red',
+  fontSize: 14,
+  marginTop: 4,
+},
 });
 
