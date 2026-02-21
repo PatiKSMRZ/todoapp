@@ -18,9 +18,9 @@ export const useRegister = () => {
     try {
       const cleanEmail = email.trim();
       const cred = await registerWithEmail(cleanEmail, password);
-      await createUserDoc(cred.user.uid, cred.user.email);
+      await createUserDoc(cred.user.uid, cleanEmail);
       return { ok: true as const };
-    } catch (e) {
+    } catch (e: unknown) {
       return { ok: false as const, error: mapFirebaseAuthError(e) };
     } finally {
       setLoading(false);

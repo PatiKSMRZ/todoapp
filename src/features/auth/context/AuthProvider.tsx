@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { ensureUserDoc } from '../services/firebase/users.service';
 
 type AuthContextValue = {
   user: FirebaseAuthTypes.User | null;
@@ -15,14 +16,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [initializing, setInitializing] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged((u) => {
-      setUser(u);
-      setInitializing(false);
-    });
+useEffect(() => {
+  const unsubscribe = auth().onAuthStateChanged(async (u) => {
+    setUser(u);
 
-    return unsubscribe;
-  }, []);
+    if (u) {
+      // ✅ “naprawa” profilu jeśli kiedyś Firestore nie zapisał
+      ensureUserDoc(u.uid, u.email).catch(() => {
+        // opcjonalnie: log / Sentry
+      });
+    }
+
+    setInitializing(false);
+  });
+
+  return unsubscribe;
+}, []);
 
   return (
     <AuthContext.Provider value={{ user, initializing }}>
