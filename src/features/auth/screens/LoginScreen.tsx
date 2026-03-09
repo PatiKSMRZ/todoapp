@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  Keyboard,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../../navigation/AuthStackNavigator';
 import { useLogin } from '../hooks/useLogin';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+
+const isValidEmail = (value: string) => {
+  // prosta walidacja “wystarczająca na start”
+  return /^\S+@\S+\.\S+$/.test(value);
+};
 
 export default function LoginScreen({ navigation }: Props) {
   const { login, loading, error } = useLogin();
@@ -12,16 +25,42 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const passwordRef = useRef<TextInput>(null);
+
+  const canSubmit = useMemo(() => {
+    return !loading && email.trim().length > 0 && password.length > 0;
+  }, [loading, email, password]);
+
   const handleLogin = () => {
-    login(email, password);
+    const normalizedEmail = email.trim();
+
+    // lokalna walidacja przed requestem
+    if (!normalizedEmail) {
+      setLocalError('Podaj email.');
+      return;
+    }
+    if (!isValidEmail(normalizedEmail)) {
+      setLocalError('Podaj poprawny adres email.');
+      return;
+    }
+    if (!password) {
+      setLocalError('Podaj hasło.');
+      return;
+    }
+
+    setLocalError(null);
+    Keyboard.dismiss();
+    login(normalizedEmail, password);
   };
+
+  const shownError = localError ?? error ?? null;
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Logowanie</Text>
-      <Text style={styles.subtitle}>
-        Zaloguj się, żeby zobaczyć swoje zadania.
-      </Text>
+      <Text style={styles.subtitle}>Zaloguj się, żeby zobaczyć swoje zadania.</Text>
 
       <View style={styles.form}>
         <View style={styles.field}>
@@ -30,32 +69,58 @@ export default function LoginScreen({ navigation }: Props) {
             placeholder="np. patrycja@email.com"
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
+            editable={!loading}
             style={styles.input}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (localError) setLocalError(null);
+            }}
+            // UX + autofill
+            textContentType="emailAddress"
+            autoComplete="email"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Hasło</Text>
           <TextInput
+            ref={passwordRef}
             placeholder="Twoje hasło"
             secureTextEntry
+            editable={!loading}
             style={styles.input}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (localError) setLocalError(null);
+            }}
+            textContentType="password"
+            autoComplete="password"
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
           />
         </View>
 
-        {error && <Text style={styles.error}>{error}</Text>}
+        {shownError ? (
+          <Text style={styles.error} accessibilityRole="alert">
+            {shownError}
+          </Text>
+        ) : null}
 
         <Pressable
           onPress={handleLogin}
           style={({ pressed }) => [
             styles.primaryButton,
-            pressed && { opacity: 0.8 },
+            !canSubmit && styles.primaryButtonDisabled,
+            pressed && canSubmit && { opacity: 0.8 },
           ]}
-          disabled={loading}
+          disabled={!canSubmit}
+          accessibilityLabel="Zaloguj"
+          accessibilityRole="button"
         >
           {loading ? (
             <ActivityIndicator color="white" />
@@ -67,10 +132,12 @@ export default function LoginScreen({ navigation }: Props) {
         <Pressable
           onPress={() => navigation.navigate('Register')}
           style={styles.linkButton}
+          disabled={loading}
+          accessibilityLabel="Przejdź do rejestracji"
+          accessibilityRole="button"
         >
           <Text style={styles.linkText}>
-            Nie masz konta?{' '}
-            <Text style={styles.linkTextStrong}>Zarejestruj się</Text>
+            Nie masz konta? <Text style={styles.linkTextStrong}>Zarejestruj się</Text>
           </Text>
         </Pressable>
       </View>
@@ -119,6 +186,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: 'black',
   },
+  primaryButtonDisabled: {
+    opacity: 0.5,
+  },
   primaryButtonText: {
     color: 'white',
     fontSize: 16,
@@ -127,6 +197,7 @@ const styles = StyleSheet.create({
   linkButton: {
     paddingVertical: 10,
     alignItems: 'center',
+    opacity: 0.95,
   },
   linkText: {
     fontSize: 14,
@@ -137,9 +208,8 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   error: {
-  color: 'red',
-  fontSize: 14,
-  marginTop: 4,
-},
+    color: 'red',
+    fontSize: 14,
+    marginTop: 4,
+  },
 });
-
