@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,45 +10,100 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TasksStackParamList } from '../../../navigation/TasksStackNavigator';
+import { useTasks } from '../context/TasksContext.tsx';
+import type { Task, TaskFilter, TaskSort } from '../types/task.types';
 
-type UiTask = {
-  id: string;
-  title: string;
-  done: boolean;
-  createdAt: number;
+type TasksListNavigationProp = NativeStackNavigationProp<
+  TasksStackParamList,
+  'TasksList'
+>;
+
+function getFilterLabel(filter: TaskFilter): string {
+  if (filter === 'all') return 'Filtr: Wszystkie';
+  if (filter === 'active') return 'Filtr: Aktywne';
+  return 'Filtr: Ukończone';
+}
+
+function getSortLabel(sort: TaskSort): string {
+  if (sort === 'newest') return 'Sort: Najnowsze';
+  if (sort === 'oldest') return 'Sort: Najstarsze';
+  return 'Sort: A-Z';
+}
+
+function getEmptyMessage(filter: TaskFilter): string {
+  if (filter === 'active') return 'Brak aktywnych zadań.';
+  if (filter === 'completed') return 'Brak ukończonych zadań.';
+  return 'Brak zadań — dodaj pierwsze!';
+}
+
+type TaskListItemProps = {
+  task: Task;
+  onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => void;
+  onToggleDone: (taskId: string) => void;
 };
 
-type FilterType = 'all' | 'active' | 'completed';
-type SortType = 'newest' | 'oldest' | 'alphabetical';
+function TaskListItem({
+  task,
+  onEdit,
+  onDelete,
+  onToggleDone,
+}: TaskListItemProps) {
+  return (
+    <Pressable onPress={() => onEdit(task)} style={styles.taskItem}>
+      <View style={styles.taskLeft}>
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onToggleDone(task.id);
+          }}
+          hitSlop={10}
+          style={styles.checkbox}
+        >
+          {task.done && <Text style={styles.checkmark}>✓</Text>}
+        </Pressable>
 
-const MOCK_TASKS: UiTask[] = [
-  {
-    id: '1',
-    title: 'Kupić mleko',
-    done: false,
-    createdAt: 1710000000000,
-  },
-  {
-    id: '2',
-    title: 'Zrobić 15 min angielskiego',
-    done: true,
-    createdAt: 1710001000000,
-  },
-  {
-    id: '3',
-    title: 'Umyć auto',
-    done: false,
-    createdAt: 1710002000000,
-  },
-];
+        <View style={styles.taskTextWrapper}>
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[styles.taskTitle, task.done && styles.taskTitleDone]}
+          >
+            {task.title}
+          </Text>
+
+          {!!task.notes && (
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={styles.taskNotes}
+            >
+              {task.notes}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      <Pressable
+        onPress={(e) => {
+          e.stopPropagation();
+          onDelete(task.id);
+        }}
+        hitSlop={10}
+        style={styles.deleteButton}
+      >
+        <Text style={styles.deleteButtonText}>Usuń</Text>
+      </Pressable>
+    </Pressable>
+  );
+}
 
 export default function TasksListScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<TasksStackParamList>>();
+  const navigation = useNavigation<TasksListNavigationProp>();
+  const { tasks, deleteTask, toggleTaskDone } = useTasks();
 
-  const [tasks, setTasks] = useState<UiTask[]>(MOCK_TASKS);
-  const [filter, setFilter] = useState<FilterType>('all');
-  const [sortBy, setSortBy] = useState<SortType>('newest');
+  const [filter, setFilter] = React.useState<TaskFilter>('all');
+  const [sortBy, setSortBy] = React.useState<TaskSort>('newest');
 
   const visibleTasks = useMemo(() => {
     let result = [...tasks];
@@ -76,34 +131,37 @@ export default function TasksListScreen() {
     return result;
   }, [tasks, filter, sortBy]);
 
-  const handleDeleteTask = (taskId: string) => {
-    Alert.alert('Usunąć zadanie?', 'Tej operacji nie da się cofnąć.', [
-      { text: 'Anuluj', style: 'cancel' },
-      {
-        text: 'Usuń',
-        style: 'destructive',
-        onPress: () => {
-          setTasks((prev) => prev.filter((task) => task.id !== taskId));
+  const handleDeleteTask = useCallback(
+    (taskId: string) => {
+      Alert.alert('Usunąć zadanie?', 'Tej operacji nie da się cofnąć.', [
+        { text: 'Anuluj', style: 'cancel' },
+        {
+          text: 'Usuń',
+          style: 'destructive',
+          onPress: () => deleteTask(taskId),
         },
-      },
-    ]);
-  };
+      ]);
+    },
+    [deleteTask]
+  );
 
-  const handleToggleTaskDone = (taskId: string) => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === taskId ? { ...task, done: !task.done } : task
-      )
-    );
-  };
+  const handleToggleTaskDone = useCallback(
+    (taskId: string) => {
+      toggleTaskDone(taskId);
+    },
+    [toggleTaskDone]
+  );
 
-  const handleAddTask = () => {
+  const handleAddTask = useCallback(() => {
     navigation.navigate('TaskForm');
-  };
+  }, [navigation]);
 
-  const handleEditTask = (taskId: string) => {
-    navigation.navigate('TaskForm', { taskId });
-  };
+  const handleEditTask = useCallback(
+    (task: Task) => {
+      navigation.navigate('TaskForm', { taskId: task.id });
+    },
+    [navigation]
+  );
 
   const handleChangeFilter = () => {
     setFilter((prev) => {
@@ -121,64 +179,17 @@ export default function TasksListScreen() {
     });
   };
 
-  const getFilterLabel = () => {
-    if (filter === 'all') return 'Filtr: Wszystkie';
-    if (filter === 'active') return 'Filtr: Aktywne';
-    return 'Filtr: Ukończone';
-  };
-
-  const getSortLabel = () => {
-    if (sortBy === 'newest') return 'Sort: Najnowsze';
-    if (sortBy === 'oldest') return 'Sort: Najstarsze';
-    return 'Sort: A-Z';
-  };
-
-  const getEmptyMessage = () => {
-    if (filter === 'active') return 'Brak aktywnych zadań.';
-    if (filter === 'completed') return 'Brak ukończonych zadań.';
-    return 'Brak zadań — dodaj pierwsze!';
-  };
-
-  const renderItem = ({ item }: { item: UiTask }) => {
-    return (
-      <Pressable
-        onPress={() => handleEditTask(item.id)}
-        style={styles.taskItem}
-      >
-        <View style={styles.taskLeft}>
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              handleToggleTaskDone(item.id);
-            }}
-            hitSlop={10}
-            style={styles.checkbox}
-          >
-            {item.done && <Text style={styles.checkmark}>✓</Text>}
-          </Pressable>
-
-          <Text
-            numberOfLines={1}
-            ellipsizeMode="tail"
-            style={[styles.taskTitle, item.done && styles.taskTitleDone]}
-          >
-            {item.title}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            handleDeleteTask(item.id);
-          }}
-          hitSlop={10}
-          style={styles.deleteButton}
-        >
-          <Text style={styles.deleteButtonText}>Usuń</Text>
-        </Pressable>
-      </Pressable>
-    );
-  };
+  const renderItem = useCallback(
+    ({ item }: { item: Task }) => (
+      <TaskListItem
+        task={item}
+        onEdit={handleEditTask}
+        onDelete={handleDeleteTask}
+        onToggleDone={handleToggleTaskDone}
+      />
+    ),
+    [handleDeleteTask, handleEditTask, handleToggleTaskDone]
+  );
 
   return (
     <View style={styles.container}>
@@ -192,11 +203,11 @@ export default function TasksListScreen() {
 
       <View style={styles.toolbar}>
         <Pressable onPress={handleChangeFilter} style={styles.toolbarButton}>
-          <Text style={styles.toolbarButtonText}>{getFilterLabel()}</Text>
+          <Text style={styles.toolbarButtonText}>{getFilterLabel(filter)}</Text>
         </Pressable>
 
         <Pressable onPress={handleChangeSort} style={styles.toolbarButton}>
-          <Text style={styles.toolbarButtonText}>{getSortLabel()}</Text>
+          <Text style={styles.toolbarButtonText}>{getSortLabel(sortBy)}</Text>
         </Pressable>
       </View>
 
@@ -208,7 +219,7 @@ export default function TasksListScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>{getEmptyMessage()}</Text>
+            <Text style={styles.emptyText}>{getEmptyMessage(filter)}</Text>
           </View>
         }
       />
@@ -283,6 +294,9 @@ const styles = StyleSheet.create({
     gap: 10,
     flex: 1,
   },
+  taskTextWrapper: {
+    flex: 1,
+  },
   checkbox: {
     width: 22,
     height: 22,
@@ -301,6 +315,11 @@ const styles = StyleSheet.create({
   taskTitleDone: {
     textDecorationLine: 'line-through',
     opacity: 0.6,
+  },
+  taskNotes: {
+    marginTop: 2,
+    fontSize: 13,
+    opacity: 0.7,
   },
   deleteButton: {
     paddingVertical: 6,
