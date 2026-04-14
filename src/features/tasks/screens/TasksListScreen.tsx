@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,126 +10,35 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TasksStackParamList } from '../../../navigation/TasksStackNavigator';
-import { useTasks } from '../context/TasksContext.tsx';
-import type { Task, TaskFilter, TaskSort } from '../types/task.types';
+import type { Task } from '../types/task.types';
+import TaskListItem from '../components/TaskListItem';
+import TasksEmptyState from '../components/TasksEmptyState'
+import TasksToolbar from '../components/TasksToolbar';
+import {
+  getFilterLabel,
+  getSortLabel,
+  getEmptyMessage,
+} from '../utils/task.helpers';
+import { useTasksList } from '../hooks/useTasksList';
 
 type TasksListNavigationProp = NativeStackNavigationProp<
   TasksStackParamList,
   'TasksList'
 >;
 
-function getFilterLabel(filter: TaskFilter): string {
-  if (filter === 'all') return 'Filtr: Wszystkie';
-  if (filter === 'active') return 'Filtr: Aktywne';
-  return 'Filtr: Ukończone';
-}
-
-function getSortLabel(sort: TaskSort): string {
-  if (sort === 'newest') return 'Sort: Najnowsze';
-  if (sort === 'oldest') return 'Sort: Najstarsze';
-  return 'Sort: A-Z';
-}
-
-function getEmptyMessage(filter: TaskFilter): string {
-  if (filter === 'active') return 'Brak aktywnych zadań.';
-  if (filter === 'completed') return 'Brak ukończonych zadań.';
-  return 'Brak zadań — dodaj pierwsze!';
-}
-
-type TaskListItemProps = {
-  task: Task;
-  onEdit: (task: Task) => void;
-  onDelete: (taskId: string) => void;
-  onToggleDone: (taskId: string) => void;
-};
-
-function TaskListItem({
-  task,
-  onEdit,
-  onDelete,
-  onToggleDone,
-}: TaskListItemProps) {
-  return (
-    <Pressable onPress={() => onEdit(task)} style={styles.taskItem}>
-      <View style={styles.taskLeft}>
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            onToggleDone(task.id);
-          }}
-          hitSlop={10}
-          style={styles.checkbox}
-        >
-          {task.done && <Text style={styles.checkmark}>✓</Text>}
-        </Pressable>
-
-        <View style={styles.taskTextWrapper}>
-          <Text
-            numberOfLines={1}
-            ellipsizeMode="tail"
-            style={[styles.taskTitle, task.done && styles.taskTitleDone]}
-          >
-            {task.title}
-          </Text>
-
-          {!!task.notes && (
-            <Text
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={styles.taskNotes}
-            >
-              {task.notes}
-            </Text>
-          )}
-        </View>
-      </View>
-
-      <Pressable
-        onPress={(e) => {
-          e.stopPropagation();
-          onDelete(task.id);
-        }}
-        hitSlop={10}
-        style={styles.deleteButton}
-      >
-        <Text style={styles.deleteButtonText}>Usuń</Text>
-      </Pressable>
-    </Pressable>
-  );
-}
-
+//* główny komponent
 export default function TasksListScreen() {
   const navigation = useNavigation<TasksListNavigationProp>();
-  const { tasks, deleteTask, toggleTaskDone } = useTasks();
+    const {
+      visibleTasks,
+      filter,
+      sortBy,
+      changeFilter,
+      changeSort,
+      deleteTask,
+      toggleTaskDone,
+    } = useTasksList();
 
-  const [filter, setFilter] = React.useState<TaskFilter>('all');
-  const [sortBy, setSortBy] = React.useState<TaskSort>('newest');
-
-  const visibleTasks = useMemo(() => {
-    let result = [...tasks];
-
-    if (filter === 'active') {
-      result = result.filter((task) => !task.done);
-    }
-
-    if (filter === 'completed') {
-      result = result.filter((task) => task.done);
-    }
-
-    if (sortBy === 'newest') {
-      result.sort((a, b) => b.createdAt - a.createdAt);
-    }
-
-    if (sortBy === 'oldest') {
-      result.sort((a, b) => a.createdAt - b.createdAt);
-    }
-
-    if (sortBy === 'alphabetical') {
-      result.sort((a, b) => a.title.localeCompare(b.title, 'pl'));
-    }
-
-    return result;
-  }, [tasks, filter, sortBy]);
 
   const handleDeleteTask = useCallback(
     (taskId: string) => {
@@ -163,21 +72,7 @@ export default function TasksListScreen() {
     [navigation]
   );
 
-  const handleChangeFilter = () => {
-    setFilter((prev) => {
-      if (prev === 'all') return 'active';
-      if (prev === 'active') return 'completed';
-      return 'all';
-    });
-  };
-
-  const handleChangeSort = () => {
-    setSortBy((prev) => {
-      if (prev === 'newest') return 'oldest';
-      if (prev === 'oldest') return 'alphabetical';
-      return 'newest';
-    });
-  };
+  
 
   const renderItem = useCallback(
     ({ item }: { item: Task }) => (
@@ -201,15 +96,12 @@ export default function TasksListScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.toolbar}>
-        <Pressable onPress={handleChangeFilter} style={styles.toolbarButton}>
-          <Text style={styles.toolbarButtonText}>{getFilterLabel(filter)}</Text>
-        </Pressable>
-
-        <Pressable onPress={handleChangeSort} style={styles.toolbarButton}>
-          <Text style={styles.toolbarButtonText}>{getSortLabel(sortBy)}</Text>
-        </Pressable>
-      </View>
+            <TasksToolbar
+            filterLabel={getFilterLabel(filter)}
+            sortLabel={getSortLabel(sortBy)}
+            onChangeFilter={changeFilter}
+            onChangeSort={changeSort}
+          />
 
       <FlatList
         data={visibleTasks}
@@ -218,15 +110,13 @@ export default function TasksListScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>{getEmptyMessage(filter)}</Text>
-          </View>
-        }
+          <TasksEmptyState message={getEmptyMessage(filter)} />
+}
       />
     </View>
   );
 }
-
+//*style
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -256,89 +146,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  toolbar: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  toolbarButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  toolbarButtonText: {
-    textAlign: 'center',
-  },
-
   listContent: {
     paddingBottom: 24,
     flexGrow: 1,
   },
 
-  taskItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  taskLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  taskTextWrapper: {
-    flex: 1,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmark: {
-    fontSize: 14,
-  },
-  taskTitle: {
-    fontSize: 16,
-    flexShrink: 1,
-  },
-  taskTitleDone: {
-    textDecorationLine: 'line-through',
-    opacity: 0.6,
-  },
-  taskNotes: {
-    marginTop: 2,
-    fontSize: 13,
-    opacity: 0.7,
-  },
-  deleteButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  deleteButtonText: {
-    fontSize: 14,
-  },
-
-  emptyState: {
-    flex: 1,
-    paddingTop: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    opacity: 0.7,
-    textAlign: 'center',
-  },
 });

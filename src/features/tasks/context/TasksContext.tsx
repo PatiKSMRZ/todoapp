@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useMemo, useState } from 'react';
+import { buildNewTask, buildUpdatedTask } from '../services/firebase/task.service';
 import type {
   Task,
   CreateTaskInput,
@@ -38,11 +39,9 @@ const MOCK_TASKS: Task[] = [
   },
 ];
 
-const TasksContext = createContext<TasksContextValue | undefined>(undefined);
+export const TasksContext = createContext<TasksContextValue | undefined>(undefined);
 
-function generateTaskId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
+
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS);
@@ -55,31 +54,18 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         return tasks.find((task) => task.id === taskId);
       },
 
-      createTask: ({ title, notes }) => {
-        const newTask: Task = {
-          id: generateTaskId(),
-          title: title.trim(),
-          notes: notes.trim(),
-          done: false,
-          createdAt: Date.now(),
-        };
+          createTask: (input) => {
+          const newTask = buildNewTask(input);
+          setTasks((prev) => [newTask, ...prev]);
+        },
 
-        setTasks((prev) => [newTask, ...prev]);
-      },
-
-      updateTask: ({ id, title, notes }) => {
-        setTasks((prev) =>
-          prev.map((task) =>
-            task.id === id
-              ? {
-                  ...task,
-                  title: title.trim(),
-                  notes: notes.trim(),
-                }
-              : task
-          )
-        );
-      },
+              updateTask: (input) => {
+              setTasks((prev) =>
+              prev.map((task) =>
+                task.id === input.id ? buildUpdatedTask(task, input) : task
+              )
+            );
+          },
 
       deleteTask: (taskId) => {
         setTasks((prev) => prev.filter((task) => task.id !== taskId));
@@ -100,12 +86,3 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useTasks() {
-  const context = useContext(TasksContext);
-
-  if (!context) {
-    throw new Error('useTasks must be used within TasksProvider');
-  }
-
-  return context;
-}
