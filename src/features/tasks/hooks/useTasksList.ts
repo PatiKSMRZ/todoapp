@@ -4,7 +4,7 @@ import type { TaskFilter, TaskSort } from '../types/task.types';
 import { getVisibleTasks } from '../utils/task.helpers';
 
 export function useTasksList() {
-  const { tasks, deleteTask, toggleTaskDone } = useTasks();
+  const { tasks, deleteTask, toggleTaskDone, isLoading, isSaving } = useTasks();
 
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [sortBy, setSortBy] = useState<TaskSort>('newest');
@@ -37,5 +37,7 @@ export function useTasksList() {
     changeSort,
     deleteTask,
     toggleTaskDone,
+    isSaving, 
+    isLoading
   };
 }

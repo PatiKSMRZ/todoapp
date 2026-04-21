@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -37,6 +38,8 @@ export default function TasksListScreen() {
       changeSort,
       deleteTask,
       toggleTaskDone,
+      isSaving,
+      isLoading
     } = useTasksList();
 
 
@@ -78,22 +81,37 @@ export default function TasksListScreen() {
     ({ item }: { item: Task }) => (
       <TaskListItem
         task={item}
+        isSaving={isSaving}
         onEdit={handleEditTask}
         onDelete={handleDeleteTask}
         onToggleDone={handleToggleTaskDone}
       />
     ),
-    [handleDeleteTask, handleEditTask, handleToggleTaskDone]
+    [handleDeleteTask, handleEditTask, handleToggleTaskDone, isSaving]
   );
+
+    if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator />
+        <Text style={styles.loadingText}>Ładowanie zadań...</Text>
+      </View>
+    );
+  }
+
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Zadania</Text>
 
-        <Pressable onPress={handleAddTask} style={styles.addButton}>
-          <Text style={styles.addButtonText}>+</Text>
-        </Pressable>
+        <Pressable
+        onPress={handleAddTask}
+        style={[styles.addButton, isSaving && styles.addButtonDisabled]}
+        disabled={isSaving}
+        >
+  <Text style={styles.addButtonText}>+</Text>
+</Pressable>
       </View>
 
             <TasksToolbar
@@ -122,6 +140,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+    center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+
+  loadingText: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+
 
   header: {
     flexDirection: 'row',
@@ -141,6 +171,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+    addButtonDisabled: {
+    opacity: 0.5,
+  },
+
   addButtonText: {
     fontSize: 22,
     fontWeight: '700',

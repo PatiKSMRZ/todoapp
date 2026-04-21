@@ -4,6 +4,7 @@ import type { Task } from '../types/task.types';
 
 type TaskListItemProps = {
   task: Task;
+  isSaving: boolean;
   onEdit: (task: Task) => void;
   onDelete: (taskId: string) => void;
   onToggleDone: (taskId: string) => void;
@@ -11,12 +12,15 @@ type TaskListItemProps = {
 
 export default function TaskListItem({
   task,
+  isSaving,
   onEdit,
   onDelete,
   onToggleDone,
 }: TaskListItemProps) {
   return (
-    <Pressable onPress={() => onEdit(task)} style={styles.taskItem}>
+    <Pressable onPress={() => onEdit(task)}
+     style={styles.taskItem}
+     disabled={isSaving}>
       <View style={styles.taskLeft}>
         <Pressable
           onPress={(e) => {
@@ -25,6 +29,7 @@ export default function TaskListItem({
           }}
           hitSlop={10}
           style={styles.checkbox}
+          disabled={isSaving}
         >
           {task.done && <Text style={styles.checkmark}>✓</Text>}
         </Pressable>
@@ -57,6 +62,7 @@ export default function TaskListItem({
         }}
         hitSlop={10}
         style={styles.deleteButton}
+        disabled={isSaving}
       >
         <Text style={styles.deleteButtonText}>Usuń</Text>
       </Pressable>

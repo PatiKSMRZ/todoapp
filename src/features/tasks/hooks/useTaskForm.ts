@@ -15,7 +15,7 @@ type TaskFormNavigationProp = NativeStackNavigationProp<
 export function useTaskForm() {
   const navigation = useNavigation<TaskFormNavigationProp>();
   const route = useRoute<TaskFormRouteProp>();
-  const { getTaskById, createTask, updateTask } = useTasks();
+  const { getTaskById, createTask, updateTask, isSaving } = useTasks();
 
   const taskId = route.params?.taskId;
   const isEditing = Boolean(taskId);
@@ -39,7 +39,7 @@ export function useTaskForm() {
     setNotes('');
   }, [existingTask]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedTitle = title.trim();
     const trimmedNotes = notes.trim();
 
@@ -47,28 +47,31 @@ export function useTaskForm() {
       Alert.alert('Błąd', 'Tytuł nie może być pusty.');
       return;
     }
+ try {
+      if (isEditing) {
+        if (!existingTask) {
+          Alert.alert('Błąd', 'Nie znaleziono zadania do edycji.');
+          return;
+        }
 
-    if (isEditing) {
-      if (!existingTask) {
-        Alert.alert('Błąd', 'Nie znaleziono zadania do edycji.');
-        return;
+        await updateTask({
+          id: existingTask.id,
+          title: trimmedTitle,
+          notes: trimmedNotes,
+        });
+      } else {
+        await createTask({
+          title: trimmedTitle,
+          notes: trimmedNotes,
+        });
       }
 
-      updateTask({
-        id: existingTask.id,
-        title: trimmedTitle,
-        notes: trimmedNotes,
-      });
-    } else {
-      createTask({
-        title: trimmedTitle,
-        notes: trimmedNotes,
-      });
+      navigation.goBack();
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Błąd', 'Nie udało się zapisać zadania. Spróbuj ponownie.');
     }
-
-    navigation.goBack();
   };
-
   return {
     title,
     notes,
@@ -76,5 +79,6 @@ export function useTaskForm() {
     setNotes,
     isEditing,
     handleSave,
+    isSaving,
   };
 }

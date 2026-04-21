@@ -2,8 +2,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Alert, ActivityIndicator,StyleSheet } from 'react-native';
 import { useRegister } from '../hooks/useRegister';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../../../navigation/AuthStackNavigator';
 
-export default function RegisterScreen() {
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+
+export default function RegisterScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
@@ -35,6 +39,7 @@ export default function RegisterScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             style={styles.input}
+            editable={!loading}
           />
         </View>
 
@@ -46,6 +51,7 @@ export default function RegisterScreen() {
             placeholder="Minimum 6 znaków"
             secureTextEntry
             style={styles.input}
+            editable={!loading}
           />
         </View>
 
@@ -57,6 +63,7 @@ export default function RegisterScreen() {
             placeholder="Powtórz hasło"
             secureTextEntry
             style={styles.input}
+            editable={!loading}
           />
         </View>
 
@@ -68,7 +75,7 @@ export default function RegisterScreen() {
           {loading ? <ActivityIndicator color="white" /> : <Text style={styles.primaryButtonText}>Utwórz konto</Text>}
         </Pressable>
 
-        <Pressable onPress={() => console.log('Go to Login')} style={styles.linkButton} disabled={loading}>
+        <Pressable onPress={() => navigation.navigate('Login')} style={styles.linkButton} disabled={loading}>
           <Text style={styles.linkText}>
             Masz konto? <Text style={styles.linkTextStrong}>Zaloguj się</Text>
           </Text>

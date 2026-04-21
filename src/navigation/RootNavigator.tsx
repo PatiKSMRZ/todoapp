@@ -4,6 +4,7 @@ import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { useAuth } from '../features/auth/context/AuthProvider';
 import AuthStackNavigator from './AuthStackNavigator';
 import AppTabsNavigator from './AppTabsNavigator';
+import { Text } from "react-native-gesture-handler";
 
 
 export default function RootNavigator() {
@@ -12,7 +13,8 @@ export default function RootNavigator() {
   if (initializing) {
     return (
       <View style={styles.x}>
-        <ActivityIndicator />
+        <ActivityIndicator  size="large"/>
+          <Text>Ładowanie aplikacji</Text>
       </View>
     );
   }

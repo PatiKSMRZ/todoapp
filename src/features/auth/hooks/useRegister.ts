@@ -9,9 +9,9 @@ export const useRegister = () => {
   const [loading, setLoading] = useState(false);
 
   const register = useCallback(async (email: string, password: string, password2: string) => {
-    if (loading) return { ok: false as const, error: { title: '', message: '' } };
+    if (loading) return { ok: false as const, error: { title: 'Trwa rejestracja', message: 'Poczekaj chwilę' } };
 
-    const validation = validateRegisterForm({ email, password, password2 });
+    const validation = validateRegisterForm({ email, password, confirmPassword: password2 });
     if (validation) return { ok: false as const, error: validation };
 
     setLoading(true);

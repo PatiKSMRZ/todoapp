@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useTaskForm } from '../hooks/useTaskForm';
+import { ActivityIndicator } from 'react-native';
 
 
 
@@ -18,6 +19,7 @@ export default function TaskFormScreen() {
     setNotes,
     isEditing,
     handleSave,
+    isSaving,
   } = useTaskForm();
 
   return (
@@ -29,6 +31,7 @@ export default function TaskFormScreen() {
           style={styles.input}
           value={title}
           onChangeText={setTitle}
+          editable={!isSaving}
         />
       </View>
 
@@ -41,14 +44,23 @@ export default function TaskFormScreen() {
           numberOfLines={4}
           value={notes}
           onChangeText={setNotes}
+          editable={!isSaving}
         />
       </View>
 
-      <Pressable onPress={handleSave} style={styles.saveButton}>
-        <Text style={styles.saveButtonText}>
-          {isEditing ? 'Zapisz zmiany' : 'Zapisz'}
-        </Text>
-      </Pressable>
+      <Pressable
+  onPress={handleSave}
+  style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+  disabled={isSaving}
+>
+  {isSaving ? (
+    <ActivityIndicator />
+  ) : (
+    <Text style={styles.saveButtonText}>
+      {isEditing ? 'Zapisz zmiany' : 'Zapisz'}
+    </Text>
+  )}
+</Pressable>
     </View>
   );
 }
@@ -90,4 +102,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  saveButtonDisabled: {
+  opacity: 0.5,
+},
 });
