@@ -1,31 +1,35 @@
 import { useState } from "react";
 import { loginWithEmail } from '../services/firebase/auth.service';
+import { mapFirebaseAuthError } from '../utils/mapFirebaseAuthError';
+import { validateLoginForm } from '../validation/loginForm.validation';
+
 
 export const useLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const login = async (email: string, password: string) => {
-    setError(null);
+       if (loading) return;
 
-    if (!email.trim()) return setError("Podaj email.");
-    if (!email.includes("@")) return setError("Niepoprawny email.");
-    if (!password) return setError("Podaj hasło.");
+      setError(null);
+
+    const normalizedEmail = email.trim(); //& to nie jest stała globalna, więc musi być w srodku email
+   
+    const validationError = validateLoginForm({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     try {
       setLoading(true);
-      await loginWithEmail(email, password);
-      // NIC nie nawigujesz ręcznie — stan usera ogarnie RootNavigator przez onAuthStateChanged
-    } catch (e: any) {
-      const code = e?.code as string | undefined;
-
-      // Najczęstsze kody z RN Firebase:
-      if (code === "auth/invalid-email") setError("Niepoprawny email.");
-      else if (code === "auth/user-not-found") setError("Nie ma takiego użytkownika.");
-      else if (code === "auth/wrong-password") setError("Błędne hasło.");
-      else if (code === "auth/invalid-credential") setError("Błędny email lub hasło.");
-      else if (code === "auth/user-disabled") setError("Konto jest zablokowane.");
-      else setError("Nie udało się zalogować. Spróbuj ponownie.");
+      await loginWithEmail(normalizedEmail, password);
+    } catch (e: unknown) {
+      setError(mapFirebaseAuthError(e));
     } finally {
       setLoading(false);
     }

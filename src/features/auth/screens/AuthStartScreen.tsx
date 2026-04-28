@@ -20,6 +20,7 @@ export default function AuthStartScreen({navigation}: Props) {
         <Pressable
           onPress={() => navigation.navigate('Login')}
           style={styles.primaryButton}
+          accessibilityRole="button"
         >
           <Text style={styles.primaryButtonText}>Zaloguj się</Text>
         </Pressable>

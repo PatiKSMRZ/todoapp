@@ -5,6 +5,7 @@ export const registerWithEmail = async (
   email: string,
   password: string
 ): Promise<FirebaseAuthTypes.UserCredential> => {
+  
   return auth().createUserWithEmailAndPassword(email.trim(), password);
 };
 
@@ -16,11 +17,11 @@ export const loginWithEmail = async (
 };
 
 export const logout = async (): Promise<void> => {
-  await auth().signOut();
+  return auth().signOut();
 };
 
 export const resetPassword = async (email: string): Promise<void> => {
-  await auth().sendPasswordResetEmail(email.trim());
+  return auth().sendPasswordResetEmail(email.trim());
 };
 
 // opcjonalnie (czasem się przydaje)

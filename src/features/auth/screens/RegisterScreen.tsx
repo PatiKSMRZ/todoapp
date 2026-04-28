@@ -10,12 +10,13 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 export default function RegisterScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [password2, setPassword2] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const { register, loading } = useRegister();
 
   const handleRegister = async () => {
-    const result = await register(email, password, password2);
+    if (loading) return;
+    const result = await register(email, password, confirmPassword);
     if (result.ok) {
       Alert.alert('Sukces', 'Konto zostało utworzone!');
       return;
@@ -38,6 +39,9 @@ export default function RegisterScreen({ navigation }: Props) {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            returnKeyType="next"
             style={styles.input}
             editable={!loading}
           />
@@ -50,6 +54,9 @@ export default function RegisterScreen({ navigation }: Props) {
             onChangeText={setPassword}
             placeholder="Minimum 6 znaków"
             secureTextEntry
+            autoComplete="password-new"
+            textContentType="newPassword"
+            returnKeyType="next"
             style={styles.input}
             editable={!loading}
           />
@@ -58,10 +65,13 @@ export default function RegisterScreen({ navigation }: Props) {
         <View style={styles.field}>
           <Text style={styles.label}>Powtórz hasło</Text>
           <TextInput
-            value={password2}
-            onChangeText={setPassword2}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
             placeholder="Powtórz hasło"
             secureTextEntry
+            autoComplete="password-new"
+            textContentType="newPassword"
+            returnKeyType="done"
             style={styles.input}
             editable={!loading}
           />

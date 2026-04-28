@@ -7,23 +7,20 @@ type AuthContextValue = {
   initializing: boolean;
 };
 
-const AuthContext = createContext<AuthContextValue>({
-  user: null,
-  initializing: true,
-});
+const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [initializing, setInitializing] = useState(true);
 
 useEffect(() => {
-  const unsubscribe = auth().onAuthStateChanged(async (u) => {
+  const unsubscribe = auth().onAuthStateChanged( (u) => {
     setUser(u);
 
     if (u) {
       // ✅ “naprawa” profilu jeśli kiedyś Firestore nie zapisał
-      ensureUserDoc(u.uid, u.email).catch(() => {
-        // opcjonalnie: log / Sentry
+      ensureUserDoc(u.uid, u.email).catch(error => {
+        console.log('Failed to ensure user doc:', error);
       });
     }
 
@@ -40,4 +37,12 @@ useEffect(() => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth must be used inside AuthProvider');
+  }
+
+  return context;
+};

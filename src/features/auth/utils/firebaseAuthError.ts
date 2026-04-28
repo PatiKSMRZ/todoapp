@@ -21,6 +21,8 @@ export const mapFirebaseAuthError = (e: unknown): UiError => {
       return { title: 'Słabe hasło', message: 'Użyj mocniejszego hasła (min. 6 znaków).' };
     case 'auth/network-request-failed':
       return { title: 'Brak internetu', message: 'Sprawdź połączenie i spróbuj ponownie.' };
+    case 'auth/too-many-requests':
+      return { title: 'Zbyt wiele prób', message: 'Spróbuj ponownie za kilka minut.'};
     default:
       return {
         title: 'Rejestracja nieudana',

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, {  useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,7 @@ import { useLogin } from '../hooks/useLogin';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-const isValidEmail = (value: string) => {
-  // prosta walidacja “wystarczająca na start”
-  return /^\S+@\S+\.\S+$/.test(value);
-};
+
 
 export default function LoginScreen({ navigation }: Props) {
   const { login, loading, error } = useLogin();
@@ -25,37 +22,15 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const [localError, setLocalError] = useState<string | null>(null);
 
   const passwordRef = useRef<TextInput>(null);
 
-  const canSubmit = useMemo(() => {
-    return !loading && email.trim().length > 0 && password.length > 0;
-  }, [loading, email, password]);
+    const canSubmit = !loading && email.trim().length > 0 && password.length > 0;
 
   const handleLogin = () => {
-    const normalizedEmail = email.trim();
-
-    // lokalna walidacja przed requestem
-    if (!normalizedEmail) {
-      setLocalError('Podaj email.');
-      return;
-    }
-    if (!isValidEmail(normalizedEmail)) {
-      setLocalError('Podaj poprawny adres email.');
-      return;
-    }
-    if (!password) {
-      setLocalError('Podaj hasło.');
-      return;
-    }
-
-    setLocalError(null);
     Keyboard.dismiss();
-    login(normalizedEmail, password);
+    login(email, password);
   };
-
-  const shownError = localError ?? error ?? null;
 
   return (
     <View style={styles.container}>
@@ -73,10 +48,7 @@ export default function LoginScreen({ navigation }: Props) {
             editable={!loading}
             style={styles.input}
             value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              if (localError) setLocalError(null);
-            }}
+            onChangeText={setEmail}
             // UX + autofill
             textContentType="emailAddress"
             autoComplete="email"
@@ -94,20 +66,21 @@ export default function LoginScreen({ navigation }: Props) {
             editable={!loading}
             style={styles.input}
             value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              if (localError) setLocalError(null);
-            }}
+            onChangeText={setPassword}
             textContentType="password"
             autoComplete="password"
             returnKeyType="done"
-            onSubmitEditing={handleLogin}
+            onSubmitEditing={() => {
+                if (canSubmit) {
+                  handleLogin();
+                }
+              }}
           />
         </View>
 
-        {shownError ? (
+        {error ? (
           <Text style={styles.error} accessibilityRole="alert">
-            {shownError}
+            {error}
           </Text>
         ) : null}
 
