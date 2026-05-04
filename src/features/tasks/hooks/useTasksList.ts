@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useTasks } from './useTasks';
 import type { TaskFilter, TaskSort } from '../types/task.types';
 import { getVisibleTasks } from '../utils/task.helpers';
 
 export function useTasksList() {
-  const { tasks, deleteTask, toggleTaskDone, isLoading, isSaving } = useTasks();
+  const { tasks, deleteTask, toggleTaskDone, isLoading, isSaving,error } = useTasks();
 
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [sortBy, setSortBy] = useState<TaskSort>('newest');
@@ -13,21 +13,21 @@ export function useTasksList() {
     return getVisibleTasks(tasks, filter, sortBy);
   }, [tasks, filter, sortBy]);
 
-  const changeFilter = () => {
+  const changeFilter = useCallback(() => {
     setFilter((prev) => {
       if (prev === 'all') return 'active';
       if (prev === 'active') return 'completed';
       return 'all';
     });
-  };
+  },[]);
 
-  const changeSort = () => {
+  const changeSort = useCallback(() => {
     setSortBy((prev) => {
       if (prev === 'newest') return 'oldest';
       if (prev === 'oldest') return 'alphabetical';
       return 'newest';
     });
-  };
+  }, []);
 
   return {
     visibleTasks,
@@ -38,6 +38,7 @@ export function useTasksList() {
     deleteTask,
     toggleTaskDone,
     isSaving, 
-    isLoading
+    isLoading,
+    error
   };
 }

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -28,29 +27,45 @@ export function useTaskForm() {
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
 
+    const [error, setError] = useState<string | null>(null);
+
+    const [titleError, setTitleError] = useState<string | null>(null);
+
+    const isSaveDisabled = isSaving || !title.trim();
+
   useEffect(() => {
     if (existingTask) {
       setTitle(existingTask.title);
-      setNotes(existingTask.notes);
+      setNotes(existingTask.notes ?? '');
+
+      setError(null);
+      setTitleError(null);
+
       return;
     }
 
     setTitle('');
     setNotes('');
+
+    setError(null);
+    setTitleError(null);
   }, [existingTask]);
 
   const handleSave = async () => {
     const trimmedTitle = title.trim();
     const trimmedNotes = notes.trim();
 
+    setError(null);
+    setTitleError(null);
+
     if (!trimmedTitle) {
-      Alert.alert('Błąd', 'Tytuł nie może być pusty.');
+      setTitleError('Tytuł nie może być pusty.');
       return;
     }
  try {
       if (isEditing) {
         if (!existingTask) {
-          Alert.alert('Błąd', 'Nie znaleziono zadania do edycji.');
+          setError('Nie znaleziono zadania do edycji.');
           return;
         }
 
@@ -67,9 +82,10 @@ export function useTaskForm() {
       }
 
       navigation.goBack();
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Błąd', 'Nie udało się zapisać zadania. Spróbuj ponownie.');
+    } catch (unknownError) {
+      console.error(unknownError);
+      setError('Nie udało się zapisać zadania. Spróbuj ponownie.');
+
     }
   };
   return {
@@ -80,5 +96,8 @@ export function useTaskForm() {
     isEditing,
     handleSave,
     isSaving,
+    error,
+    titleError,
+    isSaveDisabled
   };
 }

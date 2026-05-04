@@ -5,9 +5,10 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
+  ActivityIndicator
 } from 'react-native';
 import { useTaskForm } from '../hooks/useTaskForm';
-import { ActivityIndicator } from 'react-native';
+
 
 
 
@@ -20,6 +21,9 @@ export default function TaskFormScreen() {
     isEditing,
     handleSave,
     isSaving,
+    error,
+    titleError,
+    isSaveDisabled,
   } = useTaskForm();
 
   return (
@@ -28,11 +32,17 @@ export default function TaskFormScreen() {
         <Text style={styles.label}>Tytuł</Text>
         <TextInput
           placeholder="Np. Zrobić zakupy"
-          style={styles.input}
+          style={[
+            styles.input,
+            titleError && styles.inputError, 
+          ]}
           value={title}
           onChangeText={setTitle}
           editable={!isSaving}
         />
+         {titleError ? (
+          <Text style={styles.errorText}>{titleError}</Text>
+        ) : null}
       </View>
 
       <View style={styles.field}>
@@ -47,18 +57,25 @@ export default function TaskFormScreen() {
           editable={!isSaving}
         />
       </View>
+    {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <Pressable
   onPress={handleSave}
-  style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-  disabled={isSaving}
+  style={[
+          styles.saveButton,
+          isSaveDisabled && styles.saveButtonDisabled, 
+        ]}
+  disabled={isSaveDisabled}
 >
   {isSaving ? (
+    <View style={styles.savingContent}>
     <ActivityIndicator />
+    <Text style={styles.savingText}>Zapisywanie...</Text>
+  </View>
   ) : (
     <Text style={styles.saveButtonText}>
-      {isEditing ? 'Zapisz zmiany' : 'Zapisz'}
-    </Text>
+    {isEditing ? 'Zapisz zmiany' : 'Zapisz'}
+  </Text>
   )}
 </Pressable>
     </View>
@@ -86,6 +103,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
   },
+    inputError: {
+    borderColor: 'red', // ZMIANA: nowy styl błędu inputa
+  },
   textArea: {
     height: 120,
     textAlignVertical: 'top',
@@ -101,6 +121,20 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '700',
+  },
+    savingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  errorText: {
+  marginBottom: 12,
+  fontSize: 14,
+  color: 'red',
+},
+  savingText: {
+    fontSize: 16,
+    fontWeight: '600', // ZMIANA: nowy styl
   },
   saveButtonDisabled: {
   opacity: 0.5,

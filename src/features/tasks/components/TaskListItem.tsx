@@ -19,7 +19,10 @@ export default function TaskListItem({
 }: TaskListItemProps) {
   return (
     <Pressable onPress={() => onEdit(task)}
-     style={styles.taskItem}
+     style={[
+        styles.taskItem,
+        isSaving && styles.taskItemDisabled, 
+          ]}
      disabled={isSaving}>
       <View style={styles.taskLeft}>
         <Pressable
@@ -28,7 +31,10 @@ export default function TaskListItem({
             onToggleDone(task.id);
           }}
           hitSlop={10}
-          style={styles.checkbox}
+          style={[
+                styles.checkbox,
+                isSaving && styles.checkboxDisabled, // 🔥 NOWE
+              ]}
           disabled={isSaving}
         >
           {task.done && <Text style={styles.checkmark}>✓</Text>}
@@ -61,7 +67,10 @@ export default function TaskListItem({
           onDelete(task.id);
         }}
         hitSlop={10}
-        style={styles.deleteButton}
+        style={[
+              styles.deleteButton,
+              isSaving && styles.deleteButtonDisabled, // 🔥 NOWE
+            ]}
         disabled={isSaving}
       >
         <Text style={styles.deleteButtonText}>Usuń</Text>
@@ -124,4 +133,13 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 14,
   },
+  taskItemDisabled: {
+  opacity: 0.5,
+},
+checkboxDisabled: {
+  opacity: 0.5,
+},
+deleteButtonDisabled: {
+  opacity: 0.5,
+},
 });
