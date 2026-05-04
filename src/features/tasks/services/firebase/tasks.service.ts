@@ -15,15 +15,14 @@ type FirestoreTaskData = {
   createdAt: number;
   updatedAt: number;
 };
-//&wskazuje miejsce w forestore gdzie są zapisane taski konkretnego uzytkownika 
-const getUserTasksCollection = (uid: string) => {  //& f. przyjmuje uid (ID user)
-  return firestore()  //& łączenie z firestore
+
+const getUserTasksCollection = (uid: string) => {
+  return firestore()
     .collection('users')
     .doc(uid)
     .collection('tasks');
 };
 
-//& zamiana dokumnetów z firestore na obiekt Task
 const mapDocToTask = (
   doc: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>
 ): Task => {
@@ -37,13 +36,32 @@ const mapDocToTask = (
     createdAt: data.createdAt,
   };
 };
-//&  pobiera taski usera z bazy, zamienia je na task[] i oddaje do aplikacji
+
 export const fetchTasks = async (uid: string): Promise<Task[]> => {
   const snapshot = await getUserTasksCollection(uid)
     .orderBy('createdAt', 'desc')
     .get();
 
   return snapshot.docs.map(mapDocToTask);
+};
+
+export const subscribeToTasks = (
+  uid: string,
+  onTasksChange: (tasks: Task[]) => void,
+  onError?: (error: unknown) => void
+) => {
+  return getUserTasksCollection(uid)
+    .orderBy('createdAt', 'desc')
+    .onSnapshot(
+      (snapshot) => {
+        const tasks = snapshot.docs.map(mapDocToTask);
+        onTasksChange(tasks);
+      },
+      (error) => {
+        console.error('Błąd listenera tasków:', error);
+        onError?.(error);
+      }
+    );
 };
 
 export const createTaskInFirestore = async (
@@ -98,4 +116,3 @@ export const toggleTaskDoneInFirestore = async (
       updatedAt: Date.now(),
     });
 };
-//!plik jest po to żeby oddzielić kontakt z firebase od reszty aplikacji. 

@@ -8,7 +8,7 @@ import React, {
 import auth from '@react-native-firebase/auth';
 
 import {
-  fetchTasks,
+  subscribeToTasks,
   createTaskInFirestore,
   updateTaskInFirestore,
   deleteTaskFromFirestore,
@@ -43,32 +43,36 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTasks = useCallback(async () => {
+  // 🔥 REAL-TIME LISTENER
+  useEffect(() => {
     const user = auth().currentUser;
 
-    try {
-      setIsLoading(true);
-      setError(null)
-      
-
-      if (!user) {
-        setTasks([]);
-        return;
-      }
-
-      const tasksFromFirestore = await fetchTasks(user.uid);
-      setTasks(tasksFromFirestore);
-    } catch (unknownError) {
-      console.error('Błąd podczas pobierania tasków:', unknownError);
-      setError('nie udało sie pobrać zadań, sprawdź połączenie internetowe')
-    } finally {
+    if (!user) {
+      setTasks([]);
       setIsLoading(false);
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+    setIsLoading(true);
+    setError(null);
+
+    const unsubscribe = subscribeToTasks(
+      user.uid,
+      (tasksFromFirestore) => {
+        setTasks(tasksFromFirestore);
+        setIsLoading(false);
+        setError(null);
+      },
+      () => {
+        setError(
+          'Nie udało się pobrać zadań. Sprawdź połączenie internetowe.'
+        );
+        setIsLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
 
   const getTaskById = useCallback(
     (taskId: string) => {
@@ -77,90 +81,80 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     [tasks]
   );
 
-  const createTask = useCallback(
-    async (input: CreateTaskInput) => {
-      const user = auth().currentUser;
+  const createTask = useCallback(async (input: CreateTaskInput) => {
+    const user = auth().currentUser;
 
-      if (!user) {
-        setError('Musisz być zalogowany, żeby dodać zadanie')
-        return;
-      }
+    if (!user) {
+      setError('Musisz być zalogowany, żeby dodać zadanie');
+      return;
+    }
 
-      try {
-        setIsSaving(true);
-        setError(null);
+    try {
+      setIsSaving(true);
+      setError(null);
 
+      await createTaskInFirestore(user.uid, input);
+    } catch (unknownError) {
+      console.error('Błąd podczas tworzenia taska:', unknownError);
+      setError('Nie udało się dodać zadania. Spróbuj ponownie.');
+      throw unknownError;
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
 
-        await createTaskInFirestore(user.uid, input);
-        await loadTasks();
-      } catch (unknownError) {
-        console.error('Błąd podczas tworzenia taska:', unknownError);
-        setError('Nie udało się dodać zadania. Spróbuj ponownie.');
-        throw unknownError;
-      } finally {
-        setIsSaving(false);
-        
-      }
-    },
-    [loadTasks]
-  );
+  const updateTask = useCallback(async (input: UpdateTaskInput) => {
+    const user = auth().currentUser;
 
-  const updateTask = useCallback(
-    async (input: UpdateTaskInput) => {
-      const user = auth().currentUser;
+    if (!user) {
+      setError('Musisz być zalogowana, żeby edytować zadanie.');
+      return;
+    }
 
-      if (!user) {
-        setError('Musisz być zalogowana, żeby edytować zadanie.')
-        return;
-      }
+    try {
+      setIsSaving(true);
+      setError(null);
 
-      try {
-        setIsSaving(true);
-        setError(null);
-        await updateTaskInFirestore(user.uid, input);
-        await loadTasks();
-      } catch (unknownError) {
-        console.error('Błąd podczas edycji taska:', unknownError);
-        setError('Nie udało się zapisać zmian. Spróbuj ponownie.');
-        throw unknownError;
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    [loadTasks]
-  );
+      await updateTaskInFirestore(user.uid, input);
+    } catch (unknownError) {
+      console.error('Błąd podczas edycji taska:', unknownError);
+      setError('Nie udało się zapisać zmian. Spróbuj ponownie.');
+      throw unknownError;
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
 
-  const deleteTask = useCallback(
-    async (taskId: string) => {
-      const user = auth().currentUser;
+  const deleteTask = useCallback(async (taskId: string) => {
+    const user = auth().currentUser;
 
-      if (!user) {
-        setError('Musisz być zalogowana, żeby usunąć zadanie.');
-        return;
-      }
+    if (!user) {
+      setError('Musisz być zalogowana, żeby usunąć zadanie.');
+      return;
+    }
 
-      try {
-        setIsSaving(true);
-        setError(null);
-        await deleteTaskFromFirestore(user.uid, taskId);
-        await loadTasks();
-      } catch (unknownError) {
-        console.error('Błąd podczas usuwania taska:', unknownError);
-         setError('Nie udało się usunąć zadania. Spróbuj ponownie.');
-        throw unknownError;
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    [loadTasks]
-  );
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      await deleteTaskFromFirestore(user.uid, taskId);
+    } catch (unknownError) {
+      console.error('Błąd podczas usuwania taska:', unknownError);
+      setError('Nie udało się usunąć zadania. Spróbuj ponownie.');
+      throw unknownError;
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
 
   const toggleTaskDone = useCallback(
     async (taskId: string) => {
       const user = auth().currentUser;
 
       if (!user) {
-        setError('Musisz być zalogowana, żeby zmienić status zadania.');
+        setError(
+          'Musisz być zalogowana, żeby zmienić status zadania.'
+        );
         return;
       }
 
@@ -174,17 +168,22 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       try {
         setIsSaving(true);
         setError(null);
+
         await toggleTaskDoneInFirestore(user.uid, task);
-        await loadTasks();
       } catch (unknownError) {
-        console.error('Błąd podczas zmiany statusu taska:', unknownError);
-        setError('Nie udało się zmienić statusu zadania. Spróbuj ponownie.')
+        console.error(
+          'Błąd podczas zmiany statusu taska:',
+          unknownError
+        );
+        setError(
+          'Nie udało się zmienić statusu zadania. Spróbuj ponownie.'
+        );
         throw unknownError;
       } finally {
         setIsSaving(false);
       }
     },
-    [loadTasks, tasks]
+    [tasks]
   );
 
   const value = useMemo<TasksContextValue>(() => {
