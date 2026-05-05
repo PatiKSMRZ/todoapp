@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,24 @@ import { useTasks } from '../../tasks/hooks/useTasks';
 
 export default function ProfileScreen() {
   const { user } = useAuth();
-  const { tasks } = useTasks();
+
+  const { tasks, isLoading } = useTasks();
+
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const activeTasksCount = tasks.filter((task) => !task.done).length;
-  const completedTasksCount = tasks.filter((task) => task.done).length;
+   const userInitial = user?.email?.[0]?.toUpperCase() ?? '?';
+
+   const stats = useMemo(() => {
+    return {
+      active: tasks.filter((task) => !task.done).length,
+      completed: tasks.filter((task) => task.done).length,
+
+      
+      total: tasks.length,
+    };
+  }, [tasks]);
+  
 
   const handleEditProfile = () => {
     Alert.alert(
@@ -66,33 +78,60 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.card}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{userInitial}</Text>
+          </View>
           <Text style={styles.cardLabel}>Email</Text>
           <Text style={styles.cardValue}>
             {user?.email ?? 'Brak danych'}
           </Text>
         </View>
-
-        <View style={styles.stats}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{activeTasksCount}</Text>
-            <Text style={styles.statLabel}>Aktywne</Text>
+              {isLoading ? (
+          <View style={styles.infoCard}>
+            <Text style={styles.infoText}>Ładowanie statystyk...</Text>
           </View>
+        ) : (
+          <>
+            <View style={styles.stats}>
+              <View style={styles.statItem}>
+              
+                <Text style={styles.statValue}>{stats.active}</Text>
+                <Text style={styles.statLabel}>Aktywne</Text>
+              </View>
 
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{completedTasksCount}</Text>
-            <Text style={styles.statLabel}>Ukończone</Text>
-          </View>
-        </View>
+              <View style={styles.statItem}>
+                
+                <Text style={styles.statValue}>{stats.completed}</Text>
+                <Text style={styles.statLabel}>Ukończone</Text>
+              </View>
+            </View>
+
+            
+            {stats.total === 0 && (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoText}>
+                  Nie masz jeszcze żadnych zadań.
+                </Text>
+              </View>
+            )}
+          </>
+        )}
 
         <View style={styles.actions}>
           <Pressable
+            accessibilityRole="button"
             onPress={handleEditProfile}
-            style={styles.secondaryButton}
+            disabled={isLoggingOut}
+            style={[
+                styles.secondaryButton,
+                isLoggingOut && styles.disabledButton,
+              ]}
           >
             <Text style={styles.secondaryButtonText}>Edytuj profil</Text>
           </Pressable>
 
           <Pressable
+            accessibilityRole="button"
             onPress={handleLogout}
             disabled={isLoggingOut}
             style={[
@@ -111,7 +150,6 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -214,5 +252,32 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     textAlign: 'center',
     marginTop: 'auto',
+  },
+    avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#6366F1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+   avatarText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+  },
+   infoCard: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+   infoText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
   },
 });
